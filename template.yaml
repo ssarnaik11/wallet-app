@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  wallet-app
+
+  Sample SAM Template for wallet-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  CreateUserFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/create_user/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-create-user"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         createUserApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /createUser
+            Method: post
+
+  AddFundsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/add_funds/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-add-funds"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         createUserApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /addFunds/{id}
+            Method: put
+
+
+  GetFundsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/get_funds/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-get-funds"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         createUserApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /getFunds/{id}
+            Method: get
+
+
+  WithdrawFundsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/withdraw_funds/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-withdraw-funds"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         createUserApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /withdrawFunds/{id}
+            Method: put
+
+  GetRecordsFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/get_records/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-get-records"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         getRecordsApi:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /getRecords/{id}
+            Method: get
+
+  StreamRecordFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_functions/stream_records/
+      Handler: app.lambda_handler
+      FunctionName: !Sub "wallet-stream-records"
+      Runtime: python3.8
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/wallet-app-lambda"
+      Events:
+         Stream:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt KinesisStream.Arn
+            BatchSize: 100
+            StartingPosition: LATEST
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: wallet-stream-records
+      ShardCount: 1
+  
+  myDynamoTable: 
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - 
+          AttributeName: "userAccountId"
+          AttributeType: "S"
+        - 
+          AttributeName: "Timestamp"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "userAccountId"
+          KeyType: "HASH"
+        - 
+          AttributeName: "Timestamp"
+          KeyType: "RANGE"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "1"
+        WriteCapacityUnits: "1"
+      TableName: "user_account_history"
+  
+
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  

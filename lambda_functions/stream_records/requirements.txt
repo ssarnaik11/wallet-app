@@ -1,0 +1,4 @@
+requests
+protobuf
+aws-kinesis-agg
+amazon-ion==0.7.0
